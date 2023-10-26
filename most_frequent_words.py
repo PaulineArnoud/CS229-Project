@@ -142,6 +142,11 @@ def plot_common_words_per_course(course_list, common_words_dict, color_palette):
             axs[row, col].set_ylabel("Frequency")
             axs[row, col].set_title(f"Top Words in {course_name}")
             axs[row, col].tick_params(axis='x', rotation=45, labelsize=8)
+        else:
+            # Handle the case when there are no most_common_words
+            row, col = divmod(i - 1, plots_per_row)
+            axs[row, col].text(0.5, 0.5, f"{course_name} not offered Win 21-22", ha='center', va='center', fontsize=10, color='gray')
+            axs[row, col].axis('off')
 
     for i in range(len(course_list), num_rows * plots_per_row):
         row, col = divmod(i, plots_per_row)
