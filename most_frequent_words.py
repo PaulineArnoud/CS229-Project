@@ -155,7 +155,7 @@ def main():
     file_name = "course_evals.csv"
     course_list = ["CS-106A", "CS-106B", "CS-107", "CS-109", "CS-103", "CS-161", "CS-110", "MATH-51", "MATH-19", "MATH-20", "MATH-21",
                   "PHYSICS-41", "PHYSICS-43", "PHYSICS-21", "PHYSICS-23", "ECON-1", "ECON-50", "ENGR-40M", "CHEM-31B"]
-    custom_stopwords = ["course", "cs", "course", "professor", "physics", "econ"]
+    custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
     color_palette = sns.color_palette("dark")
 
     # Load data
