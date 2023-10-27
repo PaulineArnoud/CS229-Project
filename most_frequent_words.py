@@ -44,7 +44,7 @@ def preprocess_text(df):
     return df[df['RESPONSE_TEXT'].str.strip().str.len() > 0 & pd.notna(df['RESPONSE_TEXT'])]
 
 # Function to extract common words for a specific course
-def extract_common_words(dataframe, course_name, custom_stopwords, color_palette):
+def extract_course_10_most_common_words(dataframe, course_name, custom_stopwords, color_palette):
     """
     Extract the most common words for a specific course and return them.
 
@@ -175,7 +175,7 @@ def main():
     # Extract common words for each course
     common_words_dict = {}
     for course_name in course_list:
-        most_common_words = extract_common_words(reviews_with_text_df, course_name, custom_stopwords, color_palette)
+        most_common_words = extract_course_10_most_common_words(reviews_with_text_df, course_name, custom_stopwords, color_palette)
         common_words_dict[course_name] = most_common_words
 
     # Plot common words for each course
