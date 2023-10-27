@@ -1,8 +1,20 @@
 import collections
-
 import numpy as np
-
+from collections import Counter
 import util
+import nltk
+from nltk.corpus import stopwords, words as nltk_words
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from gensim.parsing.preprocessing import STOPWORDS as gensim_stopwords
+from wordcloud import STOPWORDS as wordcloud_stopwords
+
+# Function to download NLTK resources
+def download_nltk_resources():
+    """
+    Download NLTK resources (stopwords and words data) if not already downloaded.
+    """
+    nltk.download('stopwords')
+    nltk.download('words')  # Download the words in the English dictionary
 
 
 def get_words(message):
@@ -21,41 +33,49 @@ def get_words(message):
     words = message.split(" ")
     return [word.lower() for word in words]
 
-# build dict mapping each word in vocab to integer indices
 
-# def create_dictionary(messages):
-#     """Create a dictionary mapping words to integer indices.
+def create_dictionary(messages, custom_stopwords):
+    """Create a dictionary mapping words to integer indices.
 
-#     This function should create a dictionary of word to indices for each word that is in
-#     our vocab (which consists of the 1,000 most commonly found words in 
+    This function should create a dictionary of word to indices for each word that is in
+    our vocab (which consists of the 1,000 most commonly found words in 
 
-#     Rare words are often not useful for modeling. Please only add words to the dictionary
-#     if they occur in at least five messages.
+    Rare words are often not useful for modeling. Please only add words to the dictionary
+    if they occur in at least five messages.
 
-#     Args:
-#         messages: A list of strings containing SMS messages
+    Args:
+        messages: A list of strings containing SMS messages
+        custom_stopwords (list): List of custom stopwords to exclude from the dictionary.
 
-#     Returns:
-#         A python dict mapping words to integers.
-#     """
+    Returns:
+        A python dict mapping words to integers.
+    """
+    word_counts = Counter()
+    # Define words in the english dictionary
+    english_words = set(nltk_words.words())
 
-#     # *** START CODE HERE ***
-#     histogram = collections.defaultdict(int)
-#     for message in messages:
-#         words = set(get_words(message))
-#         for word in words:
-#             if word in histogram:
-#                 histogram[word] += 1
-#             else:
-#                 histogram[word] = 1
+    # Define stop words from different sources
+    stop_words = set(stopwords.words('english'))
+    stop_words.update(ENGLISH_STOP_WORDS)
+    stop_words.update(gensim_stopwords)
+    stop_words.update(wordcloud_stopwords)
 
-#     min_five = list(word for word, count in histogram.items() if count >= 5)
-#     frequent_vocab = dict()
-#     for i, word in enumerate(min_five):
-#         frequent_vocab[word] = i
-#     return frequent_vocab
-#     # *** END CODE HERE ***
+    # Merge the provided list of custom stop words with the combined stop words list, if provided
+    if custom_stopwords is not None:
+        stop_words.update(custom_stopwords)
 
+    for message in messages:
+        words = set(get_words(message))
+        words = [word for word in words if word not in stop_words and word in english_words]
+        word_counts.update(words)
+
+    min_five = list(word for word, count in word_counts.items() if count >= 5)
+    frequent_vocab = dict()
+    for i, word in enumerate(min_five):
+        frequent_vocab[word] = i
+    print(frequent_vocab)
+    return frequent_vocab
+    # *** END CODE HERE ***
 
 
 def transform_text(messages, word_dictionary):
@@ -93,7 +113,7 @@ def transform_text(messages, word_dictionary):
     # *** END CODE HERE ***
 
 
-ef fit_naive_bayes_model(matrix, labels):
+def fit_naive_bayes_model(matrix, labels):
     """Fit a naive bayes model.
 
     This function should fit a Naive Bayes model given a training matrix and labels.
@@ -192,29 +212,30 @@ def get_top_five_naive_bayes_words(model, dictionary):
 
 
 def main():
-    train_messages, train_labels = load_data('your_data_train.tsv')
-    val_messages, val_labels = load_data('your_data_val.tsv')
-    test_messages, test_labels = load_data('your_data_test.tsv')
+    train_messages, train_labels = util.load_spam_dataset('train_data.tsv')
+    # val_messages, val_labels = load_data('val_data.tsv')
+    # test_messages, test_labels = load_data('test_data.tsv')
 
-    dictionary = create_dictionary(train_messages)
+    custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
+    dictionary = create_dictionary(train_messages, custom_stopwords)
 
     print('Size of dictionary: ', len(dictionary))
 
-    util.write_json('your_data_dictionary', dictionary)
+    # util.write_json('dictionary', dictionary)
 
-    train_matrix = transform_text(train_messages, dictionary)
-    val_matrix = transform_text(val_messages, dictionary)
-    test_matrix = transform_text(test_messages, dictionary)
+    # train_matrix = transform_text(train_messages, dictionary)
+    # val_matrix = transform_text(val_messages, dictionary)
+    # test_matrix = transform_text(test_messages, dictionary)
 
-    naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
+    # naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
 
-    naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
+    # naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
 
-    np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
+    # np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
 
-    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
+    # naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
 
-    print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
+    # print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
 
 
 if __name__ == "__main__":
