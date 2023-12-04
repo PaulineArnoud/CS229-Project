@@ -1,5 +1,4 @@
 import csv
-
 import matplotlib.pyplot as plt
 import numpy as np
 import json
@@ -51,7 +50,7 @@ def load_csv(csv_path, label_col='y', add_intercept=False):
 
     return inputs, labels
 
-def load_spam_dataset(tsv_path):
+def load_tsv_dataset(tsv_path):
     """Load the spam dataset from a TSV file
 
     Args:
@@ -70,7 +69,7 @@ def load_spam_dataset(tsv_path):
 
         for label, message in reader:
             messages.append(message)
-            labels.append(1 if label == 'spam' else 0)
+            labels.append(label)
 
     return messages, np.array(labels)
 

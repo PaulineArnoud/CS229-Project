@@ -7,6 +7,7 @@ from nltk.corpus import stopwords, words as nltk_words
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from gensim.parsing.preprocessing import STOPWORDS as gensim_stopwords
 from wordcloud import STOPWORDS as wordcloud_stopwords
+import error_analysis
 
 # Function to download NLTK resources
 def download_nltk_resources():
@@ -73,10 +74,8 @@ def create_dictionary(messages, custom_stopwords):
     frequent_vocab = dict()
     for i, word in enumerate(min_five):
         frequent_vocab[word] = i
-    print(frequent_vocab)
     return frequent_vocab
     # *** END CODE HERE ***
-
 
 def transform_text(messages, word_dictionary):
     """Transform a list of text messages into a numpy array for further processing.
@@ -100,7 +99,7 @@ def transform_text(messages, word_dictionary):
     """
     # *** START CODE HERE ***
     n_messages = len(messages)
-    n_words = len(word_dictionary)  # 1722
+    n_words = len(word_dictionary) 
     freq_array = np.zeros((n_messages, n_words), dtype=int)
 
     for i, message in enumerate(messages):
@@ -149,9 +148,9 @@ def fit_naive_bayes_model(matrix, labels):
         class_matrix = matrix[labels == label]
         class_total = class_matrix.sum()
         class_counts = class_matrix.sum(axis=0)
-        
+
         counts[:, i] = class_counts
-        probs[:, i] = (class_counts + 1) / (class_total + n_words)
+        probs[:, i] = (class_counts + 1) / (class_counts.sum() + n_words)
 
     return {
         "priors": priors,
@@ -172,49 +171,31 @@ def predict_from_naive_bayes_model(model, matrix):
     Returns: A numpy array containing the predicted class labels
     """
     # *** START CODE HERE ***
-    n_messages, n_words = matrix.shape
+    n_messages, n_words = matrix.shape # 558, 1722
     n_classes = len(model["priors"])
 
-    # Calculate the log-likelihood for each class
-    log_likelihoods = np.zeros((n_messages, n_classes))
-    for i in range(n_classes):
-        log_likelihoods[:, i] = np.log(model["probs"][:, i]).dot(matrix.T)
+    # calculate log likelihood of p_Y1_given_x and p_Y0_given_x
+    LL_Y0 = np.dot(matrix, np.log(model["probs"][:, 0])) + np.log(model["priors"]["0"])
+    LL_Y1 = np.dot(matrix, np.log(model["probs"][:, 1])) + np.log(model["priors"]["1"])
+    LL_Y2 = np.dot(matrix, np.log(model["probs"][:, 2])) + np.log(model["priors"]["2"])
 
-    # Add priors to the log-likelihoods
-    for i in range(n_classes):
-        log_likelihoods[:, i] += np.log(model["priors"][i])
-
-    # Predict the class with the highest log-likelihood for each message
-    predictions = np.argmax(log_likelihoods, axis=1)
-
-    return predictions
+    # predict Y value that has larger log likelihood
+    preds = np.zeros(n_messages, dtype=str)
+    for i in range(len(preds)):
+        max_value = max(LL_Y0[i], LL_Y1[i], LL_Y2[i])
+        if max_value == LL_Y0[i]:
+            preds[i] = "0"
+        elif max_value == LL_Y1[i]:
+            preds[i] = "1"
+        else:
+            preds[i] = "2"
+    return preds
     # *** END CODE HERE ***
-
-
-def get_top_five_naive_bayes_words(model, dictionary):
-    """Compute the top five words that are most indicative of the spam (i.e positive) class.
-
-    Ues the metric given in part-c as a measure of how indicative a word is.
-    Return the words in sorted form, with the most indicative word first.
-
-    Args:
-        model: The Naive Bayes model returned from fit_naive_bayes_model
-        dictionary: A mapping of word to integer ids
-
-    Returns: A list of the top five most indicative words in sorted order with the most indicative first
-    """
-    # *** START CODE HERE ***
-    # vector of log odds
-    log_odds = np.log(model["p_x_given_y1"] / model["p_x_given_y0"])
-    top_5_indices = np.argsort(log_odds)[-5:][::-1]
-    return [word for word, i in dictionary.items() if i in top_5_indices]
-    # *** END CODE HERE ***
-
 
 def main():
-    train_messages, train_labels = util.load_spam_dataset('train_data.tsv')
-    # val_messages, val_labels = load_data('val_data.tsv')
-    # test_messages, test_labels = load_data('test_data.tsv')
+    train_messages, train_labels = util.load_tsv_dataset('train_data.tsv')
+    val_messages, val_labels = util.load_tsv_dataset('eval_data.tsv')
+    test_messages, test_labels = util.load_tsv_dataset('test_data.tsv')
 
     custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
     dictionary = create_dictionary(train_messages, custom_stopwords)
@@ -223,19 +204,27 @@ def main():
 
     # util.write_json('dictionary', dictionary)
 
-    # train_matrix = transform_text(train_messages, dictionary)
-    # val_matrix = transform_text(val_messages, dictionary)
-    # test_matrix = transform_text(test_messages, dictionary)
+    train_matrix = transform_text(train_messages, dictionary)
+    val_matrix = transform_text(val_messages, dictionary)
+    test_matrix = transform_text(test_messages, dictionary)
 
-    # naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
+    print("size: ", len(train_matrix) + len(val_matrix) + len(test_matrix))
+    print("size of test set: ", len(test_matrix))
 
-    # naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
+    naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
+    naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
 
-    # np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
+    #np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
+    
+    # Create the confusion matrix
+    classes = ["0", "1", "2"]
+    error_analysis.create_normalized_confusion_matrix(test_labels, naive_bayes_predictions, classes, "naive_bayes_confusion_matrix.png")
 
-    # naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
+    # Compute the feature importances
+    error_analysis.get_feature_importances(naive_bayes_model, dictionary, classes, output_filepath="naive_bayes_feature_importances.png")
 
-    # print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
+    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
+    print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
 
 
 if __name__ == "__main__":
