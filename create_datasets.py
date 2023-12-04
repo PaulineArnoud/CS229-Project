@@ -90,9 +90,9 @@ def main():
 
     train_pairs, eval_pairs, test_pairs = build_dictionary(data, course_to_label)
 
-    create_tsv_file(train_pairs, "train_data.tsv")
-    create_tsv_file(eval_pairs, "eval_data.tsv")
-    create_tsv_file(test_pairs, "test_data.tsv")
+    create_tsv_file(train_pairs, "data/train_data.tsv")
+    create_tsv_file(eval_pairs, "data/eval_data.tsv")
+    create_tsv_file(test_pairs, "data/test_data.tsv")
 
 if __name__ == "__main__":
     main()
