@@ -83,7 +83,7 @@ def create_tsv_file(data, output_filename):
     print(f"TSV file '{output_filename}' has been created.")
 
 def main():
-    data = preprocess_text(load_data("course_evals.csv"))
+    data = preprocess_text(load_data("data/course_evals.csv"))
 
     # 0 = easy, 1 = medium, 2 = hard; labels assigned based on poll data
     course_to_label = {"CS-106A" : 0, "CS-106B" : 1, "CS-107" : 2, "CS-109" : 2, "CS-103" : 1, "CS-161" : 2, "MATH-51" : 2}
