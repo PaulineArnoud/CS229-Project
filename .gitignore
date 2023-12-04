@@ -1,2 +1,5 @@
 # Ignore all CSV files
 *.csv
+*.pyc
+*.pdf
+.DS_Store
