@@ -192,9 +192,9 @@ def predict_from_naive_bayes_model(model, matrix):
     # *** END CODE HERE ***
 
 def main():
-    train_messages, train_labels = util.load_tsv_dataset('train_data.tsv')
-    val_messages, val_labels = util.load_tsv_dataset('eval_data.tsv')
-    test_messages, test_labels = util.load_tsv_dataset('test_data.tsv')
+    train_messages, train_labels = util.load_tsv_dataset('data/train_data.tsv')
+    val_messages, val_labels = util.load_tsv_dataset('data/eval_data.tsv')
+    test_messages, test_labels = util.load_tsv_dataset('data/test_data.tsv')
 
     custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
     dictionary = create_dictionary(train_messages, custom_stopwords)
