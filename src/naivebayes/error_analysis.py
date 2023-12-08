@@ -1,9 +1,34 @@
 import numpy as np
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, f1_score, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def create_normalized_confusion_matrix(true_labels, predicted_labels, classes, output_filepath=None):
+def calculate_metrics_per_class(true_labels, predicted_labels, classes):
+    """
+    Calculate precision, recall, and F1 score for each class.
+
+    Args:
+        true_labels: True class labels
+        predicted_labels: Predicted class labels
+        classes: List of class labels
+
+    Returns:
+        A dictionary containing precision, recall, and F1 score for each class.
+    """
+    precision, recall, f1, _ = precision_recall_fscore_support(true_labels, predicted_labels, labels=classes, average=None)
+    
+    metrics_per_class = {}
+    for idx, label in enumerate(classes):
+        metrics_per_class[label] = {
+            'Precision': precision[idx],
+            'Recall': recall[idx],
+            'F1 Score': f1[idx]
+        }
+    
+    return metrics_per_class
+
+
+def create_normalized_confusion_matrix(plot_title, true_labels, predicted_labels, classes, output_filepath=None):
     """
     Plot a confusion matrix.
 
@@ -28,7 +53,7 @@ def create_normalized_confusion_matrix(true_labels, predicted_labels, classes, o
     sns.heatmap(cm, annot=True, fmt=".2f", cmap="Blues", xticklabels=classes, yticklabels=classes)
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
-    plt.title("Confusion Matrix")
+    plt.title(plot_title)
     
     if output_filepath:
         plt.savefig(output_filepath, bbox_inches='tight')

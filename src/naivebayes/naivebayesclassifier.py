@@ -7,6 +7,9 @@ from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from gensim.parsing.preprocessing import STOPWORDS as gensim_stopwords
 from wordcloud import STOPWORDS as wordcloud_stopwords
 import error_analysis
+import pickle
+from statistics import mode
+from sklearn.metrics import accuracy_score
 
 # Function to download NLTK resources
 def download_nltk_resources():
@@ -192,14 +195,14 @@ def predict_from_naive_bayes_model(model, matrix):
     # *** END CODE HERE ***
 
 def main():
-    train_messages, train_labels = util.load_tsv_dataset('data/train_data.tsv')
-    val_messages, val_labels = util.load_tsv_dataset('data/eval_data.tsv')
-    test_messages, test_labels = util.load_tsv_dataset('data/test_data.tsv')
+    train_messages, train_labels = util.load_tsv_dataset('../../data/train_data.tsv')
+    val_messages, val_labels = util.load_tsv_dataset('../../data/eval_data.tsv')
+    test_messages, test_labels = util.load_tsv_dataset('../../data/test_data.tsv')
 
     custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
     dictionary = create_dictionary(train_messages, custom_stopwords)
 
-    print('Size of dictionary: ', len(dictionary))
+    # print('Size of dictionary: ', len(dictionary))
 
     # util.write_json('dictionary', dictionary)
 
@@ -207,23 +210,63 @@ def main():
     val_matrix = transform_text(val_messages, dictionary)
     test_matrix = transform_text(test_messages, dictionary)
 
-    print("size: ", len(train_matrix) + len(val_matrix) + len(test_matrix))
-    print("size of test set: ", len(test_matrix))
+    # print("size: ", len(train_matrix) + len(val_matrix) + len(test_matrix))
+    # print("size of test set: ", len(test_matrix))
 
     naive_bayes_model = fit_naive_bayes_model(train_matrix, train_labels)
-    naive_bayes_predictions = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
-
-    #np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
+    review_pred_labels = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
+    # np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
     
-    # Create the confusion matrix
+    # Per review analysis
     classes = ["0", "1", "2"]
-    error_analysis.create_normalized_confusion_matrix(test_labels, naive_bayes_predictions, classes, "naive_bayes_confusion_matrix.png")
+    review_true_labels = test_labels
+    error_analysis.create_normalized_confusion_matrix("Confusion Matrix (By Review) for Naive Bayes", review_true_labels, review_pred_labels, classes, "naive_bayes_confusion_matrix_per_review.png")
+    review_accuracy = accuracy_score(review_true_labels, review_pred_labels)
+    review_metrics_per_class = error_analysis.calculate_metrics_per_class(list(map(int, review_true_labels)), list(map(int, review_pred_labels)), classes)
+    
+    # Print the metrics
+    print("Per-review performance")
+    print("Accuracy: ", review_accuracy)
+    for label, metrics in review_metrics_per_class.items():
+        print(f"Metrics for class {label}:")
+        print(f"Precision: {metrics['Precision']}")
+        print(f"Recall: {metrics['Recall']}")
+        print(f"F1 Score: {metrics['F1 Score']}")
+        print("-" * 20)  # Separator for better readability
+
 
     # Compute the feature importances
-    error_analysis.get_feature_importances(naive_bayes_model, dictionary, classes, output_filepath="naive_bayes_feature_importances.png")
+    # error_analysis.get_feature_importances(naive_bayes_model, dictionary, classes, output_filepath="naive_bayes_feature_importances.png")
 
-    naive_bayes_accuracy = np.mean(naive_bayes_predictions == test_labels)
-    print('Naive Bayes had an accuracy of {} on the testing set'.format(naive_bayes_accuracy))
+    # Per course analysis       
+    # course_to_true_label = {"CS-106A" : "0", "CS-106B" : "1", "CS-107" : "2", "CS-109" : "2", "CS-103" : "1", "CS-161" : "2", "MATH-51" : "2"}
+    course_true_labels = ["0", "1", "2", "2", "1", "2", "2"]
+
+    with open('../../data/course_to_review_indices_test.pkl', 'rb') as file:
+        course_to_review_indices_test = pickle.load(file)
+    
+    course_pred_labels = []
+    for course in course_to_review_indices_test:
+        course_pred_label = mode([review_pred_labels[i] for i in course_to_review_indices_test[course]])
+        course_pred_labels.append(course_pred_label)
+    
+    course_accuracy = accuracy_score(course_true_labels, course_pred_labels)
+    error_analysis.create_normalized_confusion_matrix("Confusion Matrix (By Course) for Naive Bayes", course_true_labels, course_pred_labels, classes, "naive_bayes_confusion_matrix_per_course.png")
+    course_metrics_per_class = error_analysis.calculate_metrics_per_class(list(map(int, course_true_labels)), list(map(int, course_pred_labels)), classes)
+    
+    # Print the metrics
+    print(len(test_labels))
+    print("Per-course performance")
+    print("Accuracy: ", course_accuracy)
+    for label, metrics in course_metrics_per_class.items():
+        print(f"Metrics for class {label}:")
+        print(f"Precision: {metrics['Precision']}")
+        print(f"Recall: {metrics['Recall']}")
+        print(f"F1 Score: {metrics['F1 Score']}")
+        print("-" * 20)  # Separator for better readability
+
+
+
 
 
 if __name__ == "__main__":
