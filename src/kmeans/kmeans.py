@@ -103,7 +103,7 @@ def find_closest_courses(course_reviews, cluster_labels, n_clusters):
 def main(selected_course_ids=None):
 
     # Load course review data from a CSV file
-    file_name = "data/course_evals.csv"
+    file_name = "../../data/course_evals.csv"
     course_data = load_data(file_name)
 
     # Preprocess the text data
