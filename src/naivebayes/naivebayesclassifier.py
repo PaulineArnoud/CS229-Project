@@ -7,9 +7,9 @@ from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from gensim.parsing.preprocessing import STOPWORDS as gensim_stopwords
 from wordcloud import STOPWORDS as wordcloud_stopwords
 import error_analysis
-import pickle
 from statistics import mode
 from sklearn.metrics import accuracy_score
+import pandas as pd
 
 # Function to download NLTK resources
 def download_nltk_resources():
@@ -196,18 +196,15 @@ def predict_from_naive_bayes_model(model, matrix):
 
 def main():
     train_messages, train_labels = util.load_tsv_dataset('../../data/train_data.tsv')
-    val_messages, val_labels = util.load_tsv_dataset('../../data/eval_data.tsv')
     test_messages, test_labels = util.load_tsv_dataset('../../data/test_data.tsv')
 
     custom_stopwords = ["class", "course", "cs", "course", "professor", "physics", "econ"]
     dictionary = create_dictionary(train_messages, custom_stopwords)
 
     # print('Size of dictionary: ', len(dictionary))
-
     # util.write_json('dictionary', dictionary)
 
     train_matrix = transform_text(train_messages, dictionary)
-    val_matrix = transform_text(val_messages, dictionary)
     test_matrix = transform_text(test_messages, dictionary)
 
     # print("size: ", len(train_matrix) + len(val_matrix) + len(test_matrix))
@@ -217,14 +214,14 @@ def main():
     review_pred_labels = predict_from_naive_bayes_model(naive_bayes_model, test_matrix)
     # np.savetxt('your_data_naive_bayes_predictions', naive_bayes_predictions)
     
-    # Per review analysis
+    # Classification of reviews results
     classes = ["0", "1", "2"]
     review_true_labels = test_labels
     error_analysis.create_normalized_confusion_matrix("Confusion Matrix (By Review) for Naive Bayes", review_true_labels, review_pred_labels, classes, "naive_bayes_confusion_matrix_per_review.png")
     review_accuracy = accuracy_score(review_true_labels, review_pred_labels)
     review_metrics_per_class = error_analysis.calculate_metrics_per_class(list(map(int, review_true_labels)), list(map(int, review_pred_labels)), classes)
     
-    # Print the metrics
+    # Print metrics
     print("Per-review performance")
     print("Accuracy: ", review_accuracy)
     for label, metrics in review_metrics_per_class.items():
@@ -238,18 +235,22 @@ def main():
     # Compute the feature importances
     # error_analysis.get_feature_importances(naive_bayes_model, dictionary, classes, output_filepath="naive_bayes_feature_importances.png")
 
-    # Per course analysis       
+    # Course classification results    
     # course_to_true_label = {"CS-106A" : "0", "CS-106B" : "1", "CS-107" : "2", "CS-109" : "2", "CS-103" : "1", "CS-161" : "2", "MATH-51" : "2"}
     course_true_labels = ["0", "1", "2", "2", "1", "2", "2"]
-
-    with open('../../data/course_to_review_indices_test.pkl', 'rb') as file:
-        course_to_review_indices_test = pickle.load(file)
+    test_data_with_courses = pd.read_csv("../../data/test_data_course.tsv", delimiter='\t')
+ 
+    course_to_row_indices_test_data = {}
+    for class_name in test_data_with_courses.iloc[:, 2].unique():
+        indices = test_data_with_courses[test_data_with_courses.iloc[:, 2] == class_name].index.tolist()
+        course_to_row_indices_test_data[class_name] = indices
     
     course_pred_labels = []
-    for course in course_to_review_indices_test:
-        course_pred_label = mode([review_pred_labels[i] for i in course_to_review_indices_test[course]])
+    for course in course_to_row_indices_test_data:
+        course_pred_label = mode([review_pred_labels[i] for i in course_to_row_indices_test_data[course]])
         course_pred_labels.append(course_pred_label)
     
+    print(course_pred_labels)
     course_accuracy = accuracy_score(course_true_labels, course_pred_labels)
     error_analysis.create_normalized_confusion_matrix("Confusion Matrix (By Course) for Naive Bayes", course_true_labels, course_pred_labels, classes, "naive_bayes_confusion_matrix_per_course.png")
     course_metrics_per_class = error_analysis.calculate_metrics_per_class(list(map(int, course_true_labels)), list(map(int, course_pred_labels)), classes)
